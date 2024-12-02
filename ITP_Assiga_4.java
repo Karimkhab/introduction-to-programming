@@ -6,10 +6,13 @@ import java.io.FileNotFoundException;
 
 public class Main {
     private static Scanner scanner;
-
+    private static int days;
+    private static float grassAmounts;
+    private static List<Animal> animals;
+    private static int animalAmount;
 
     private static List<Animal> readAnimals() throws InvalidNumberOfAnimalParametersException, InvalidInputsException, WeightOutOfBoundsException, SpeedOutOfBoundsException, EnergyOutOfBoundsException {
-        List<Animal> animals = new ArrayList<>();
+        animals = new ArrayList<>();
         while (scanner.hasNextLine()) {
             String command = scanner.nextLine();
             String[] tokens = command.split(" ");
@@ -76,15 +79,15 @@ public class Main {
         return animals;
     }
 
-    public static void checkFristThreeString(String[] tokensDays, String[] tokensGrass, String[] tokensAnimals) throws GrassOutOfBoundsException, InvalidInputsException {
+    public static void checkFristThreeString(String[] tokensdayss, String[] tokensGrass, String[] tokensAnimals) throws GrassOutOfBoundsException, InvalidInputsException {
         tokensGrass[0] = tokensGrass[0].replace("F", "").replace("f", "");
-        if (tokensGrass[0].matches("[-+]?\\d*\\.\\d+") && tokensDays.length == 1 && tokensGrass.length == 1 && tokensAnimals.length == 1) {
-            float grassAmount = Float.parseFloat(tokensGrass[0]);
-            if (0 <= grassAmount && grassAmount <= 100) {
-                if (tokensDays[0].matches("\\d+") && tokensAnimals[0].matches("\\d+")) {
-                    int day = Integer.parseInt(tokensDays[0]);
-                    int animalAmount = Integer.parseInt(tokensAnimals[0]);
-                    if (!(1 <= day && day <= 30 && 1 <= animalAmount && animalAmount <= 20)) {
+        if (tokensGrass[0].matches("[-+]?\\d+(\\.\\d+)?") && tokensdayss.length == 1 && tokensGrass.length == 1 && tokensAnimals.length == 1) {
+            grassAmounts = Float.parseFloat(tokensGrass[0]);
+            if (0 <= grassAmounts && grassAmounts <= 100) {
+                if (tokensdayss[0].matches("\\d+") && tokensAnimals[0].matches("\\d+")) {
+                    days = Integer.parseInt(tokensdayss[0]);
+                    animalAmount = Integer.parseInt(tokensAnimals[0]);
+                    if (!(1 <= days && days <= 30 && 1 <= animalAmount && animalAmount <= 20)) {
                         throw new InvalidInputsException();
                     }
                 } else {
@@ -98,13 +101,110 @@ public class Main {
         }
     }
 
-    private static void runSimulation(int days, float grassAmount, List<Animal> animals) {
+    public static void endForDaySimulation() {
+        grassAmounts = grassAmounts * 2;
+        if (grassAmounts > 100) {
+            grassAmounts = 100;
+        }
+        for (int i = 0; i < animals.size(); i++) {
+            animals.get(i).decrementEnergy();
+        }
+        removeDeadAnimals(animals);
     }
 
+    private static void runSimulation(int days, float grassAmount, List<Animal> animals) throws SelfHuntingException, CannibalismException, TooStrongPreyException {
+        String checkCannibalism;
+        for (int idAnimal = 0; idAnimal < animals.size(); idAnimal++) {
+            try {
+                int idAnimalIncr = (idAnimal + 1) % animals.size();
+                switch (animals.get(idAnimal).getClass().getName()) {
+                    case "Lion":
+                        checkCannibalism = animals.get(idAnimalIncr).getClass().getName();
+                        if (animals.get(idAnimalIncr).getEnergy()>0) {
+                            if (idAnimal == idAnimalIncr) {
+                                throw new SelfHuntingException();
+                            } else if (checkCannibalism.equals("Lion")) {
+                                throw new CannibalismException();
+                            } else if (animals.get(idAnimalIncr).getSpeed() > animals.get(idAnimal).getSpeed() && animals.get(idAnimalIncr).getEnergy() > animals.get(idAnimal).getEnergy()) {
+                                throw new TooStrongPreyException();
+                            } else {
+                                animals.get(idAnimal).setEnergy(animals.get(idAnimalIncr).getWeight());
+                                animals.get(idAnimalIncr).setEnergy(0);
+                                animals.remove(idAnimalIncr);
+                            }
+                        }else{
+                            animals.remove(idAnimalIncr);
+                        }
+                        break;
+                    case "Boar":
+                        if (grassAmounts > (animals.get(idAnimal).getWeight()/10)) {
+                            animals.get(idAnimal).setEnergy(animals.get(idAnimal).getWeight()/10);
+                            grassAmounts = grassAmounts - animals.get(idAnimal).getWeight()/10;
+                        }
+                        checkCannibalism = animals.get(idAnimalIncr).getClass().getName();
+                        if (animals.get(idAnimalIncr).getEnergy()>0) {
+                            if (idAnimal == idAnimalIncr) {
+                                throw new SelfHuntingException();
+                            } else if (checkCannibalism.equals("Boar")) {
+                                throw new CannibalismException();
+                            } else if (!(animals.get(idAnimalIncr).getSpeed() < animals.get(idAnimal).getSpeed() &&
+                                    animals.get(idAnimalIncr).getEnergy() < animals.get(idAnimal).getEnergy())) {
+                                throw new TooStrongPreyException();
+                            } else {
+                                animals.get(idAnimal).setEnergy(animals.get(idAnimalIncr).getWeight());
+                                animals.get(idAnimalIncr).setEnergy(0);
+                                animals.remove(idAnimalIncr);
+                            }
+                        }else{
+                            animals.remove(idAnimalIncr);
+                        }
+                        break;
+                    case "Zebra":
+                        if (grassAmounts > (animals.get(idAnimal).getWeight()/10)) {
+                            animals.get(idAnimal).setEnergy(animals.get(idAnimal).getWeight()/10);
+                            grassAmounts = grassAmounts - animals.get(idAnimal).getWeight()/10;
+                        }
+                        break;
+                }
+            } catch (SelfHuntingException e) {
+                System.out.println(e.getMessage());
+            } catch (CannibalismException e) {
+                System.out.println(e.getMessage());
+            } catch (TooStrongPreyException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+        endForDaySimulation();
+//            System.out.println(animals.get(i).getClass().getName());
+//            animals.get(i);
+    }
+
+    private static void printAnimalsSec(List<Animal> animals) {
+        for (Animal animal : animals) {
+            System.out.println(animal);
+        }
+    }
+    
     private static void printAnimals(List<Animal> animals) {
+        for (Animal animal : animals) {
+            if (animal.getClass().getName().equals("Lion")) {
+                System.out.println("Roar");
+            }else if (animal.getClass().getName().equals("Zebra")) {
+                System.out.println("Ihoho");
+            }else{
+                System.out.println("Oink");
+            }
+        }
     }
 
     private static void removeDeadAnimals(List<Animal> animals) {
+        for (int i = 0; i < animals.size(); i++) {
+            Animal animal = animals.get(i);
+            if (animal.getEnergy() <= 0) {
+                animals.remove(i);
+                i--;
+            }
+        }
     }
 
     public static void main(String[] args) throws FileNotFoundException {
@@ -112,13 +212,13 @@ public class Main {
         scanner = new Scanner(file);
 
         String command = scanner.nextLine();
-        String[] tokensDays = command.split(" ");
+        String[] tokensdayss = command.split(" ");
         command = scanner.nextLine();
         String[] tokensGrass = command.split(" ");
         command = scanner.nextLine();
         String[] tokensAnimals = command.split(" ");
         try {
-            checkFristThreeString(tokensDays, tokensGrass, tokensAnimals);
+            checkFristThreeString(tokensdayss, tokensGrass, tokensAnimals);
         } catch (GrassOutOfBoundsException e) {
             System.out.println(e.getMessage());
             scanner.close();
@@ -152,12 +252,179 @@ public class Main {
             scanner.close();
             return;
         }
-        for (Animal animal : animals) {
-            System.out.println(animal);
+//        printAnimals1(animals);
+//        printAnimals1(animals);
+        removeDeadAnimals(animals);
+        for (int i = 0; i < days; i++) {
+            try {
+                runSimulation(days, grassAmounts, animals);
+            } catch (SelfHuntingException e) {
+                System.out.println(e.getMessage());
+            } catch (CannibalismException e) {
+                System.out.println(e.getMessage());
+            } catch (TooStrongPreyException e) {
+                System.out.println(e.getMessage());
+            }
         }
+        printAnimals(animals);
         scanner.close();
     }
 }
+
+abstract class Animal {
+    public static final float MIN_SPEED = 5;
+    public static final float MAX_SPEED = 60;
+
+    public static final float MIN_ENERGY = 0;
+    public static final float MAX_ENERGY = 100;
+
+    public static final float MIN_WEIGHT = 5;
+    public static final float MAX_WEIGHT = 200;
+
+    private float weight;
+    private float speed;
+    private float energy;
+
+    protected Animal(float weight, float speed, float energy) {
+        this.weight = weight;
+        this.speed = speed;
+        this.energy = energy;
+    }
+
+    public void makeSound(){
+
+    }
+    public void decrementEnergy(){
+        this.energy--;
+    }
+    public void eat(List<Animal> animals, Field field){
+        System.out.println("penis");
+    }
+
+    public boolean setAll(float weight, float speed, float energy) {
+        if (weight >= MIN_WEIGHT && weight <= MAX_WEIGHT  &&  speed >= MIN_SPEED && speed <= MAX_SPEED && energy >= MIN_ENERGY && energy <= MAX_ENERGY) {
+            return true;
+        }
+        return false;
+    }
+
+    public float getEnergy() {
+        return energy;
+    }
+
+    public float getWeight() {
+        return weight;
+    }
+
+    public void setEnergy(float energySmth) {
+        if (energySmth!=0){
+            this.energy = this.energy + energySmth;
+            if (this.energy > MAX_ENERGY) {
+                this.energy = MAX_ENERGY;
+            }
+        }else{
+            this.energy = MIN_ENERGY;
+        }
+    }
+
+    public float getSpeed() {
+        return speed;
+    }
+
+    @Override
+    public String toString() {
+        return "Animal{weight='" + weight + "', speed=" + speed  + "', energy=" + energy + "}";
+    }
+}
+
+class Boar<T> extends Animal implements Omnivore<T> {
+    public Boar(float weight, float speed, float energy) {
+        super(weight, speed, energy);
+    }
+    @Override
+    public void grazeInTheField(Animal grazer, Field field){
+        System.out.println("penis");
+    }
+    @Override
+    public Animal choosePrey(List<Animal> animals, T hunter){
+        System.out.println("penis");
+        return null;
+    }
+    @Override
+    public void huntPrey(Animal hunter,Animal prey){
+        System.out.println("penis");
+    }
+}
+
+class Lion<T> extends Animal implements Carnivore<T>{
+
+    public Lion(float weight, float speed, float energy) {
+        super(weight, speed, energy);
+    }
+    @Override
+    public Animal choosePrey(List<Animal> animals, T hunter){
+        System.out.println("penis");
+        return null;
+    }
+    @Override
+    public void huntPrey(Animal hunter,Animal prey){
+        System.out.println("penis");
+    }
+}
+
+class Zebra extends Animal implements Herbivore{
+    public Zebra(float weight, float speed, float energy) {
+        super(weight, speed, energy);
+    }
+    @Override
+    public void grazeInTheField(Animal grazer, Field field){
+        System.out.println("penis");
+    }
+}
+
+class Field {
+    private float grassAmounts;
+
+    public Field(float grassAmounts) {
+        this.grassAmounts = grassAmounts;
+    }
+
+    public void makeGrassGrow() {
+        grassAmounts = grassAmounts*2;
+        if (grassAmounts > 100) {
+            grassAmounts = 100;
+        }
+        System.out.println(grassAmounts);
+    }
+}
+
+interface Carnivore<T>{
+    public Animal choosePrey(List<Animal> animals, T hunter);
+    public void huntPrey(Animal hunter,Animal prey);
+}
+
+interface Omnivore<T> extends Herbivore,Carnivore<T>{}
+
+interface Herbivore {
+    public void grazeInTheField(Animal grazer, Field field);
+}
+
+enum AnimalSound {
+    LION("Roar"),
+    ZEBRA("Ihoho"),
+    BOAR("Oink");
+
+    private final String sound;
+
+    AnimalSound(String sound) {
+        this.sound = sound;
+    }
+
+    public String getSound() {
+        return sound;
+    }
+}
+
 
 class GrassOutOfBoundsException extends Exception {
     @Override
