@@ -22,8 +22,8 @@ Course assignments from the "Introduction to Programming" class (C + Java). Each
 
 ### Assignment 3: Smart Home System
 
-![Smart Home UML](assignment-3-smart-home-system/assets/uml_diagram_assiga_3.png)
+![Smart Home UML](assignment-3-smart-home-system/assets/uml_diagram.png)
 
 ### Assignment 4: Ecosystem Simulation
 
-![Ecosystem UML](assignment-4-ecosystem-simulation/assets/a4_uml.drawio.png)
+![Ecosystem UML](assignment-4-ecosystem-simulation/assets/uml_diagram.png)
