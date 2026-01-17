@@ -208,7 +208,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws FileNotFoundException {
-        File file = new File("/Users/karimkhabib/IdeaProjects/Assiga_4/src/input.txt");
+        File file = new File("input.txt");
         scanner = new Scanner(file);
 
         String command = scanner.nextLine();
